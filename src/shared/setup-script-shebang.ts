@@ -31,7 +31,7 @@ export function parseSetupScriptShebang(script: string): SetupScriptShebang | nu
     return null
   }
 
-  const tokens = firstLine.trim().slice(2).trim().split(/\s+/).filter(Boolean)
+  const tokens = tokenizeShebangLine(firstLine)
   const interpreterIndex = findInterpreterIndex(tokens)
   if (interpreterIndex === -1) {
     return null
@@ -62,6 +62,22 @@ export function stripLeadingShebangLine(script: string): string {
   }
   const lineEnd = script.indexOf('\n')
   return lineEnd === -1 ? '' : script.slice(lineEnd + 1)
+}
+
+function tokenizeShebangLine(firstLine: string): string[] {
+  const text = firstLine.trim().slice(2).trim()
+  const tokens: string[] = []
+  const regex = /(?:[^\s"']+|"[^"]*"|'[^']*')+/g
+  let match: RegExpExecArray | null
+  while ((match = regex.exec(text)) !== null) {
+    const raw = match[0]
+    if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
+      tokens.push(raw.slice(1, -1))
+    } else {
+      tokens.push(raw)
+    }
+  }
+  return tokens
 }
 
 function findInterpreterIndex(tokens: string[]): number {

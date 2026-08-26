@@ -44,6 +44,12 @@ describe('scriptDeclaresPowerShell', () => {
     expect(scriptDeclaresPowerShell('#!pwsh\nWrite-Host 1')).toBe(true)
     expect(scriptDeclaresPowerShell('#!powershell.exe\nWrite-Host 1')).toBe(true)
     expect(scriptDeclaresPowerShell('#!C:\\tools\\pwsh\\pwsh.exe\r\nWrite-Host 1')).toBe(true)
+    expect(scriptDeclaresPowerShell('#!"C:\\Program Files\\PowerShell\\7\\pwsh.exe"\r\nWrite-Host 1')).toBe(
+      true
+    )
+    expect(scriptDeclaresPowerShell("#!'C:\\Program Files\\PowerShell\\7\\pwsh.exe'\r\nWrite-Host 1")).toBe(
+      true
+    )
   })
 
   it('rejects POSIX shell and non-PowerShell scripts', () => {
