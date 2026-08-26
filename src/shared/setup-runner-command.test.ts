@@ -148,6 +148,17 @@ describe('buildSetupRunnerCommand', () => {
     )
   })
 
+  it('invokes PowerShell scripts with quoted path when powershell.exe has spaces in its path', () => {
+    expect(
+      buildSetupRunnerCommand('C:\\repo\\.git\\orca\\setup-runner.ps1', 'windows', {
+        family: 'cmd',
+        executable: 'C:\\Custom Tools\\powershell.exe'
+      })
+    ).toBe(
+      '"C:\\Custom Tools\\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "C:\\repo\\.git\\orca\\setup-runner.ps1"'
+    )
+  })
+
   it('detects .ps1 files as PowerShell runner paths', () => {
     expect(isWindowsPowerShellRunnerPath('C:\\repo\\.git\\orca\\setup-runner.ps1')).toBe(true)
     expect(isWindowsPowerShellRunnerPath('C:\\repo\\.git\\orca\\setup-runner.cmd')).toBe(false)

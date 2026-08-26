@@ -73,7 +73,10 @@ export function resolveSetupRunnerCommand(
       }
       const rawExecutable = shell?.executable?.trim()
       const executable =
-        rawExecutable && /pwsh(\.exe)?$/i.test(rawExecutable) ? rawExecutable : 'powershell.exe'
+        rawExecutable &&
+        (/pwsh(\.exe)?$/i.test(rawExecutable) || /powershell(\.exe)?$/i.test(rawExecutable))
+          ? rawExecutable
+          : 'powershell.exe'
       const quotedExecutable = isWindowsAbsolutePathLike(executable) || /\s/.test(executable)
         ? quoteWindowsArg(executable)
         : executable

@@ -11,10 +11,11 @@ const SET_OPTION_FLAG_PATTERN = /^[-+][abefhkmnptuvxBCHP]+$/
 // `set` dump the whole shell-option table into the setup terminal instead.
 const SET_LONG_OPTION_FLAG_PATTERN = /^[-+][abefhkmnptuvxBCHP]*o$/
 const SHELL_OPTION_NAME_PATTERN = /^[a-z_]+$/
-
 export type SetupScriptShebang = {
   /** Lowercased interpreter basename, e.g. `bash` for `#!/usr/bin/env -S bash -e`. */
   interpreter: string
+  /** Raw interpreter path or name declared in the shebang token, e.g. `C:\tools\pwsh.exe` or `bash`. */
+  interpreterPath: string
   /** Interpreter flags the generated runner replays through `set`, e.g. `['-euo', 'pipefail']`. */
   shellOptions: string[]
 }
@@ -36,9 +37,10 @@ export function parseSetupScriptShebang(script: string): SetupScriptShebang | nu
   if (interpreterIndex === -1) {
     return null
   }
-
+  const rawToken = tokens[interpreterIndex]
   return {
-    interpreter: executableBasename(tokens[interpreterIndex]),
+    interpreter: executableBasename(rawToken),
+    interpreterPath: rawToken,
     shellOptions: parseShellOptions(tokens.slice(interpreterIndex + 1))
   }
 }
@@ -61,9 +63,11 @@ export function getPowerShellInterpreterExecutable(script: string): string | nul
   if (!shebang || !POWERSHELL_SHELL_BASENAMES.has(shebang.interpreter)) {
     return null
   }
+  if (shebang.interpreterPath.includes('/') || shebang.interpreterPath.includes('\\')) {
+    return shebang.interpreterPath
+  }
   return shebang.interpreter === 'pwsh' ? 'pwsh.exe' : 'powershell.exe'
 }
-
 /** Drops a leading `#!` line; the generated runner carries its own interpreter line. */
 export function stripLeadingShebangLine(script: string): string {
   if (!isShebangLine(script.split('\n', 1)[0] ?? '')) {

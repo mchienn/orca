@@ -72,6 +72,18 @@ describe('getPowerShellInterpreterExecutable', () => {
     expect(getPowerShellInterpreterExecutable('#!/usr/bin/env bash\npnpm install')).toBeNull()
     expect(getPowerShellInterpreterExecutable('Write-Host 1')).toBeNull()
   })
+
+  it('preserves declared explicit and quoted interpreter paths', () => {
+    expect(
+      getPowerShellInterpreterExecutable('#!"C:\\Program Files\\PowerShell\\7\\pwsh.exe"\nWrite-Host 1')
+    ).toBe('C:\\Program Files\\PowerShell\\7\\pwsh.exe')
+    expect(
+      getPowerShellInterpreterExecutable('#!C:\\tools\\pwsh\\pwsh.exe\nWrite-Host 1')
+    ).toBe('C:\\tools\\pwsh\\pwsh.exe')
+    expect(
+      getPowerShellInterpreterExecutable('#!/opt/microsoft/powershell/7/pwsh\nWrite-Host 1')
+    ).toBe('/opt/microsoft/powershell/7/pwsh')
+  })
 })
 
 describe('parseSetupScriptShebang', () => {
@@ -80,14 +92,17 @@ describe('parseSetupScriptShebang', () => {
     // parsed out here and replayed with `set` — otherwise `pipefail` is silently lost.
     expect(parseSetupScriptShebang('#!/usr/bin/env -S bash -euo pipefail\nmake')).toEqual({
       interpreter: 'bash',
+      interpreterPath: 'bash',
       shellOptions: ['-euo', 'pipefail']
     })
     expect(parseSetupScriptShebang('#!/bin/bash -e -x\nmake')).toEqual({
       interpreter: 'bash',
+      interpreterPath: '/bin/bash',
       shellOptions: ['-e', '-x']
     })
     expect(parseSetupScriptShebang('#!/bin/sh\nmake')).toEqual({
       interpreter: 'sh',
+      interpreterPath: '/bin/sh',
       shellOptions: []
     })
   })
