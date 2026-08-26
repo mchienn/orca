@@ -48,6 +48,7 @@ import { AgentSessionTransitionRecorder } from './stats/agent-session-transition
 import { ClaudeUsageStore, initClaudeUsagePath } from './claude-usage/store'
 import { CodexUsageStore, initCodexUsagePath } from './codex-usage/store'
 import { OpenCodeUsageStore, initOpenCodeUsagePath } from './opencode-usage/store'
+import { GeminiUsageStore, initGeminiUsagePath } from './gemini-usage/store'
 import {
   killAllPty,
   clearProviderPtyState,
@@ -397,6 +398,7 @@ let stats: StatsCollector | null = null
 let claudeUsage: ClaudeUsageStore | null = null
 let codexUsage: CodexUsageStore | null = null
 let openCodeUsage: OpenCodeUsageStore | null = null
+let geminiUsage: GeminiUsageStore | null = null
 let codexAccounts: CodexAccountService | null = null
 let codexRuntimeHome: CodexRuntimeHomeService | null = null
 let codexSessionMigration: ReturnType<typeof createCodexSessionMigrationScheduler> | null = null
@@ -942,6 +944,7 @@ if (hasSingleInstanceLock) {
   initClaudeUsagePath()
   initCodexUsagePath()
   initOpenCodeUsagePath()
+  initGeminiUsagePath()
   // Why: Electron resolves the macOS safeStorage Keychain service name
   // ("<app name> Safe Storage") before `ready`, so the setName in whenReady is
   // too late to move it — dev otherwise lands on the package.json name. Dev-only
@@ -1425,6 +1428,9 @@ function openMainWindow(options: { revealOnDidFinishLoad?: boolean } = {}): Brow
   if (!openCodeUsage) {
     throw new Error('OpenCode usage store must be initialized before opening the main window')
   }
+  if (!geminiUsage) {
+    throw new Error('Gemini usage store must be initialized before opening the main window')
+  }
   if (!rateLimits) {
     throw new Error('Rate limit service must be initialized before opening the main window')
   }
@@ -1567,6 +1573,7 @@ function openMainWindow(options: { revealOnDidFinishLoad?: boolean } = {}): Brow
     claudeUsage,
     codexUsage,
     openCodeUsage,
+    geminiUsage,
     codexAccounts,
     claudeAccounts,
     rateLimits,
@@ -2567,6 +2574,7 @@ void app.whenReady().then(async () => {
   claudeUsage = new ClaudeUsageStore(store)
   codexUsage = new CodexUsageStore(store)
   openCodeUsage = new OpenCodeUsageStore(store)
+  geminiUsage = new GeminiUsageStore(store)
   rateLimits = new RateLimitService()
   codexRuntimeHome = new CodexRuntimeHomeService(store)
   void startCodexStateDbBackfillRecoveryInBackground(getOrcaManagedCodexHomePath())
@@ -3501,7 +3509,8 @@ app.on('will-quit', (e) => {
   const usageCacheFlush = Promise.all([
     claudeUsage?.flush(),
     codexUsage?.flush(),
-    openCodeUsage?.flush()
+    openCodeUsage?.flush(),
+    geminiUsage?.flush()
   ]).then(() => {})
   const browserClientHostShutdown = shutdownPairedRuntimeBrowserClientHosts()
   const skillUploadShutdown = runtime?.disposeSkillUploadSessions() ?? Promise.resolve()
