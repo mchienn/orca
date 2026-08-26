@@ -2,14 +2,18 @@ import { mkdirSync, writeFileSync, chmodSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { shouldWaitForSetupBeforeAgentStartup } from '../shared/setup-agent-startup-policy'
 import { nativeWindowsPathToPosixShellPath } from '../shared/setup-runner-command'
-import { scriptDeclaresPosixShell } from '../shared/setup-script-shebang'
+import { scriptDeclaresPosixShell, scriptDeclaresPowerShell } from '../shared/setup-script-shebang'
 import { resolveWindowsShellStartupFamily } from '../shared/windows-terminal-shell'
 import { resolveWindowsGitBashShellPath } from './git-bash'
 import { gitExecFileSync } from './git/runner'
 import { isWslPath, toWindowsWslPath, toLinuxPath } from './wsl'
 import { getHookRuntimeTarget, getHookWslContext } from './hook-runtime-target'
 import { SETUP_RUNNER_PATH_ENV_KEYS, getSetupRunnerEnvVars } from './setup-hook-env-vars'
-import { buildPosixRunnerScript, buildWindowsRunnerScript } from './setup-runner-script-text'
+import {
+  buildPosixRunnerScript,
+  buildPowerShellRunnerScript,
+  buildWindowsRunnerScript
+} from './setup-runner-script-text'
 import type { HookRuntimeTarget } from './hook-runtime-target'
 import type { Repo } from '../shared/repo-types'
 import type { WorktreeSetupLaunch } from '../shared/worktree/launch-types'
@@ -92,9 +96,11 @@ function createWorktreeRunnerScript(args: {
   // `#!` line opts a script into bash, so the same orca.yaml runs identically for every Windows
   // user of the repo instead of following whichever terminal each of them happens to prefer.
   const runnerShell: SetupRunnerShell = nativeWindowsWorktree
-    ? setupShell?.family === 'posix' && scriptDeclaresPosixShell(script)
-      ? setupShell
-      : { family: 'cmd' }
+    ? scriptDeclaresPowerShell(script)
+      ? { family: 'powershell' }
+      : setupShell?.family === 'posix' && scriptDeclaresPosixShell(script)
+        ? setupShell
+        : { family: 'cmd' }
     : { family: 'posix' }
   // Why: `shell` tells the launcher which shell types the command, not which format the runner
   // file is in — the .cmd/.sh extension already carries that. Reporting the runner family here
@@ -106,7 +112,8 @@ function createWorktreeRunnerScript(args: {
       ? { family: 'posix', executable: 'wsl.exe' }
       : undefined
   // Why: linked worktrees use a `.git` file, so resolve the real per-worktree gitdir via git rev-parse --git-path.
-  const runnerExtension = runnerShell.family === 'cmd' ? 'cmd' : 'sh'
+  const runnerExtension =
+    runnerShell.family === 'powershell' ? 'ps1' : runnerShell.family === 'cmd' ? 'cmd' : 'sh'
   const gitRelPath = `orca/${runnerBaseName}.${runnerExtension}`
   let runnerScriptPath = getGitPath(worktreePath, gitRelPath, runtimeTarget)
 
@@ -120,7 +127,9 @@ function createWorktreeRunnerScript(args: {
 
   mkdirSync(dirname(runnerScriptPath), { recursive: true })
 
-  if (runnerShell.family === 'cmd') {
+  if (runnerShell.family === 'powershell') {
+    writeFileSync(runnerScriptPath, buildPowerShellRunnerScript(script), 'utf-8')
+  } else if (runnerShell.family === 'cmd') {
     writeFileSync(runnerScriptPath, buildWindowsRunnerScript(script), 'utf-8')
   } else {
     writeFileSync(runnerScriptPath, buildPosixRunnerScript(script), 'utf-8')
@@ -188,6 +197,9 @@ export function resolveSetupRunnerShell(
       // per script by its `#!` line — see docs/reference/windows-setup-shell.md.
       return { family: 'posix' }
     }
+  }
+  if (family === 'powershell') {
+    return { family: 'powershell', executable: configuredShell }
   }
 
   // Why: existing Windows setup scripts were authored for Orca's cmd runner;

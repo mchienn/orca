@@ -4,13 +4,21 @@ On native Windows, Orca writes the `orca.yaml` setup script (and the issue comma
 runner file and types a launch command into a terminal. The runner is a **`.cmd` batch file by
 default**, exactly as it has been since setup hooks shipped.
 
-A script opts into bash by starting with a `#!` interpreter line:
+A script opts into bash or PowerShell by starting with a `#!` interpreter line:
 
 ```yaml
 scripts:
   setup: |
     #!/usr/bin/env bash
     [ -f .env ] || cp .env.example .env
+    pnpm install
+```
+
+```yaml
+scripts:
+  setup: |
+    #!/usr/bin/env pwsh
+    if (-not (Test-Path .env)) { Copy-Item .env.example .env }
     pnpm install
 ```
 
@@ -54,6 +62,9 @@ every platform. The `#!` line therefore does two things:
 The interpreter name itself is not honored beyond "is this a POSIX shell": `#!/bin/sh` and
 `#!/bin/zsh` scripts run under bash, exactly as they already did on macOS and Linux.
 
+
+For PowerShell (`pwsh` or `powershell`), the generated runner is written as `.ps1` with
+`$ErrorActionPreference = 'Stop'` for fail-fast execution and executed via PowerShell.
 ## Requirements for the bash runner
 
 A `#!` line only takes effect when Orca can actually launch bash from the configured terminal — the

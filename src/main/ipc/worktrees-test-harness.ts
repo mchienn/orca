@@ -38,6 +38,7 @@ import {
   parseOrcaYamlMock,
   shouldRunSetupForCreateMock,
   buildPosixRunnerScriptMock,
+  buildPowerShellRunnerScriptMock,
   buildWindowsRunnerScriptMock,
   getSetupRunnerEnvVarsMock,
   resolveSetupRunnerShellMock,
@@ -105,6 +106,7 @@ export function setupWorktreeHandlers(): WorktreeRuntimeStub {
     createIssueCommandRunnerScriptMock,
     createSetupRunnerScriptMock,
     buildPosixRunnerScriptMock,
+    buildPowerShellRunnerScriptMock,
     buildWindowsRunnerScriptMock,
     getSetupRunnerEnvVarsMock,
     resolveSetupRunnerShellMock,
@@ -233,6 +235,7 @@ export function setupWorktreeHandlers(): WorktreeRuntimeStub {
     (script: string) => `#!/usr/bin/env bash\nset -e\n${script.replace(/\r\n/g, '\n')}\n`
   )
   buildWindowsRunnerScriptMock.mockImplementation((script: string) => script)
+  buildPowerShellRunnerScriptMock.mockImplementation((script: string) => script)
   resolveSetupRunnerShellMock.mockReturnValue(undefined)
   getSetupRunnerEnvVarsMock.mockImplementation(
     (repoArg: { path: string }, worktreePath: string) => ({

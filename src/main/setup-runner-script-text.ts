@@ -71,6 +71,14 @@ export function buildPosixRunnerScript(script: string): string {
   return `#!/usr/bin/env bash\nset -e\n${declaredOptions}${normalizeCrlfScriptLineEndings(body)}\n`
 }
 
+export function buildPowerShellRunnerScript(script: string): string {
+  // Why: set $ErrorActionPreference = 'Stop' so failures abort setup immediately (set -e equivalent).
+  const shebang = parseSetupScriptShebang(script)
+  const body = shebang ? stripLeadingShebangLine(script) : script
+  const normalizedBody = normalizeCrlfScriptLineEndings(body).replaceAll('\n', '\r\n')
+  return `$ErrorActionPreference = 'Stop'\r\n${normalizedBody}\r\n`
+}
+
 function normalizeCrlfScriptLineEndings(script: string): string {
   let crlfStart = script.indexOf('\r\n')
   if (crlfStart === -1) {

@@ -3,6 +3,7 @@ import {
   isShebangLine,
   parseSetupScriptShebang,
   scriptDeclaresPosixShell,
+  scriptDeclaresPowerShell,
   stripLeadingShebangLine
 } from './setup-script-shebang'
 
@@ -32,6 +33,24 @@ describe('scriptDeclaresPosixShell', () => {
   it('tolerates CRLF and Windows-style interpreter paths', () => {
     expect(scriptDeclaresPosixShell('#!/usr/bin/env bash\r\npnpm install')).toBe(true)
     expect(scriptDeclaresPosixShell('#!C:\\tools\\git\\bin\\bash.exe\r\npnpm install')).toBe(true)
+  })
+})
+
+describe('scriptDeclaresPowerShell', () => {
+  it('accepts the common env, absolute-path, and Windows forms for pwsh and powershell', () => {
+    expect(scriptDeclaresPowerShell('#!/usr/bin/env pwsh\nWrite-Host 1')).toBe(true)
+    expect(scriptDeclaresPowerShell('#!/usr/bin/env powershell\nWrite-Host 1')).toBe(true)
+    expect(scriptDeclaresPowerShell('#!/usr/bin/env -S pwsh -NoProfile\nWrite-Host 1')).toBe(true)
+    expect(scriptDeclaresPowerShell('#!pwsh\nWrite-Host 1')).toBe(true)
+    expect(scriptDeclaresPowerShell('#!powershell.exe\nWrite-Host 1')).toBe(true)
+    expect(scriptDeclaresPowerShell('#!C:\\tools\\pwsh\\pwsh.exe\r\nWrite-Host 1')).toBe(true)
+  })
+
+  it('rejects POSIX shell and non-PowerShell scripts', () => {
+    expect(scriptDeclaresPowerShell('#!/usr/bin/env bash\npnpm install')).toBe(false)
+    expect(scriptDeclaresPowerShell('#!/bin/sh\npnpm install')).toBe(false)
+    expect(scriptDeclaresPowerShell('#!/usr/bin/env node\nconsole.log(1)')).toBe(false)
+    expect(scriptDeclaresPowerShell('Write-Host 1')).toBe(false)
   })
 })
 

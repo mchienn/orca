@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildSetupRunnerCommand,
   getSetupRunnerCommandPlatformForPath,
+  isWindowsPowerShellRunnerPath,
   nativeWindowsPathToPosixShellPath,
   resolveSetupRunnerCommand
 } from './setup-runner-command'
@@ -105,6 +106,41 @@ describe('buildSetupRunnerCommand', () => {
         family: 'posix'
       })
     ).toBe('bash /c/repo/.git/orca/setup-runner.sh')
+  })
+
+  it('invokes PowerShell scripts directly with call operator in a PowerShell pane', () => {
+    expect(
+      buildSetupRunnerCommand('C:\\repo\\.git\\orca\\setup-runner.ps1', 'windows', {
+        family: 'powershell'
+      })
+    ).toBe("& 'C:\\repo\\.git\\orca\\setup-runner.ps1'")
+  })
+
+  it('invokes PowerShell scripts with powershell.exe when launched from a CMD pane', () => {
+    expect(
+      buildSetupRunnerCommand('C:\\repo\\.git\\orca\\setup-runner.ps1', 'windows', {
+        family: 'cmd'
+      })
+    ).toBe(
+      'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "C:\\repo\\.git\\orca\\setup-runner.ps1"'
+    )
+  })
+
+  it('invokes PowerShell scripts with pwsh.exe when pwsh is the configured shell', () => {
+    expect(
+      buildSetupRunnerCommand('C:\\repo\\.git\\orca\\setup-runner.ps1', 'windows', {
+        family: 'cmd',
+        executable: 'pwsh.exe'
+      })
+    ).toBe(
+      'pwsh.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "C:\\repo\\.git\\orca\\setup-runner.ps1"'
+    )
+  })
+
+  it('detects .ps1 files as PowerShell runner paths', () => {
+    expect(isWindowsPowerShellRunnerPath('C:\\repo\\.git\\orca\\setup-runner.ps1')).toBe(true)
+    expect(isWindowsPowerShellRunnerPath('C:\\repo\\.git\\orca\\setup-runner.cmd')).toBe(false)
+    expect(isWindowsPowerShellRunnerPath('C:\\repo\\.git\\orca\\setup-runner.sh')).toBe(false)
   })
 })
 

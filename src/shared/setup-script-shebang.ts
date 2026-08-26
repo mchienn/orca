@@ -2,6 +2,7 @@
 // not of the user's terminal preference, so a `#!` line is how a project declares it.
 
 const POSIX_SHELL_BASENAMES = new Set(['sh', 'bash', 'zsh', 'dash', 'ksh', 'ash'])
+const POWERSHELL_SHELL_BASENAMES = new Set(['pwsh', 'powershell'])
 // Why: only the letters `set` itself accepts (`set [--abefhkmnptuvxBCHP] [-o option]`). An
 // invocation-only flag such as `-l` or `-r` makes `set` exit 2, which under the runner's `set -e`
 // aborts setup before its first line runs.
@@ -46,6 +47,12 @@ export function parseSetupScriptShebang(script: string): SetupScriptShebang | nu
 export function scriptDeclaresPosixShell(script: string): boolean {
   const shebang = parseSetupScriptShebang(script)
   return shebang !== null && POSIX_SHELL_BASENAMES.has(shebang.interpreter)
+}
+
+/** True when the script's first line is a `#!` line naming PowerShell. */
+export function scriptDeclaresPowerShell(script: string): boolean {
+  const shebang = parseSetupScriptShebang(script)
+  return shebang !== null && POWERSHELL_SHELL_BASENAMES.has(shebang.interpreter)
 }
 
 /** Drops a leading `#!` line; the generated runner carries its own interpreter line. */
