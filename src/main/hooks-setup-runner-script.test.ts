@@ -86,7 +86,9 @@ describe('runner script builders', () => {
     const script = '#!/usr/bin/env pwsh\n$val = 42\nWrite-Host $val'
     const result = buildPowerShellRunnerScript(script)
 
-    expect(result).toBe("$ErrorActionPreference = 'Stop'\r\n$val = 42\r\nWrite-Host $val\r\n")
+    expect(result).toBe(
+      "\uFEFF$ErrorActionPreference = 'Stop'\r\nif (Test-Path Variable:\\PSNativeCommandUseErrorActionPreference) { $PSNativeCommandUseErrorActionPreference = $true }\r\n$val = 42\r\nWrite-Host $val\r\n"
+    )
   })
 })
 
@@ -163,7 +165,7 @@ describe('createSetupRunnerScript', () => {
       )
       expect(writeFileSyncMock).toHaveBeenCalledWith(
         'C:\\repo\\.git\\orca\\setup-runner.ps1',
-        '$ErrorActionPreference = \'Stop\'\r\nWrite-Host "Setup running"\r\npnpm install\r\n',
+        "\uFEFF$ErrorActionPreference = 'Stop'\r\nif (Test-Path Variable:\\PSNativeCommandUseErrorActionPreference) { $PSNativeCommandUseErrorActionPreference = $true }\r\nWrite-Host \"Setup running\"\r\npnpm install\r\n",
         'utf-8'
       )
       expect(result).toMatchObject({

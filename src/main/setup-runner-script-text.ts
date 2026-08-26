@@ -72,11 +72,14 @@ export function buildPosixRunnerScript(script: string): string {
 }
 
 export function buildPowerShellRunnerScript(script: string): string {
-  // Why: set $ErrorActionPreference = 'Stop' so failures abort setup immediately (set -e equivalent).
+  // Why: UTF-8 BOM ensures Windows PowerShell 5.1 decodes non-ASCII scripts correctly without falling back to ANSI.
+  // $ErrorActionPreference = 'Stop' aborts setup on cmdlet errors; $PSNativeCommandUseErrorActionPreference extends that to native commands on PS 7.3+.
   const shebang = parseSetupScriptShebang(script)
   const body = shebang ? stripLeadingShebangLine(script) : script
   const normalizedBody = normalizeCrlfScriptLineEndings(body).replaceAll('\n', '\r\n')
-  return `$ErrorActionPreference = 'Stop'\r\n${normalizedBody}\r\n`
+  const header =
+    "\uFEFF$ErrorActionPreference = 'Stop'\r\nif (Test-Path Variable:\\PSNativeCommandUseErrorActionPreference) { $PSNativeCommandUseErrorActionPreference = $true }\r\n"
+  return `${header}${normalizedBody}\r\n`
 }
 
 function normalizeCrlfScriptLineEndings(script: string): string {
