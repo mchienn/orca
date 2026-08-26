@@ -108,7 +108,7 @@ describe('gemini-usage scanner', () => {
     expect(session.totalCachedInputTokens).toBe(200)
     expect(session.totalOutputTokens).toBe(400)
     expect(session.totalReasoningOutputTokens).toBe(50)
-    expect(session.totalTokens).toBe(1400)
+    expect(session.totalTokens).toBe(1450)
 
     const daily = parsed.dailyAggregates[0]!
     expect(daily.day).toBe('2026-05-10')

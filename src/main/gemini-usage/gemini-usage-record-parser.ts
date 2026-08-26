@@ -23,7 +23,7 @@ function extractModelFromText(text: string): string | null {
   }
   const raw = match[1].trim()
   if (/gemini.*3\.7.*flash/i.test(raw)) {
-    return 'gemini-3.1-flash'
+    return 'gemini-3.7-flash'
   }
   if (/gemini.*3.*pro/i.test(raw)) {
     return 'gemini-3.0-pro'
@@ -189,7 +189,9 @@ export function parseGeminiUsageRecord(
     type === 'model' ||
     type === 'assistant'
 
+  let hasInferredPricing = false
   if (!rawUsage && isModelTurn) {
+    hasInferredPricing = true
     const contentLen = parsed.content ? String(parsed.content).length : 0
     const toolCallsLen = parsed.tool_calls ? JSON.stringify(parsed.tool_calls).length : 0
     const thinkingLen = parsed.thinking ? String(parsed.thinking).length : 0
@@ -205,7 +207,6 @@ export function parseGeminiUsageRecord(
     }
     context.accumulatedPromptLength = 0
   }
-
   if (!rawUsage) {
     return null
   }
@@ -240,7 +241,7 @@ export function parseGeminiUsageRecord(
     eventKey: buildGeminiUsageEventKey(timestamp, resolution.delta, null),
     model: activeModel,
     cwd: activeCwd,
-    hasInferredPricing: false,
+    hasInferredPricing,
     inputTokens: resolution.delta.inputTokens,
     cachedInputTokens: resolution.delta.cachedInputTokens,
     outputTokens: resolution.delta.outputTokens,

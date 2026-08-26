@@ -37,6 +37,8 @@ describe('gemini-model-pricing', () => {
     expect(normalizeModelForPricing(null)).toBeNull()
     expect(normalizeModelForPricing('')).toBeNull()
     expect(normalizeModelForPricing('claude-sonnet-4-5')).toBeNull()
+    expect(normalizeModelForPricing('custom-pro-model')).toBeNull()
+    expect(normalizeModelForPricing('custom-flash')).toBeNull()
     expect(normalizeModelForPricing('gpt-5.4')).toBeNull()
   })
 

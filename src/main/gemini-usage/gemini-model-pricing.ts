@@ -1,31 +1,33 @@
-export type TieredPrice = { threshold: number; price: number }
 export type GeminiModelPricing = {
   input: number
   cachedInput: number
   output: number
-  inputTiers?: TieredPrice[]
-  cachedInputTiers?: TieredPrice[]
-  outputTiers?: TieredPrice[]
+  thresholdTokens?: number
+  inputAboveThreshold?: number
+  cachedInputAboveThreshold?: number
+  outputAboveThreshold?: number
 }
 
-const LONG_CONTEXT_THRESHOLD_TOKENS = 128_000
+const LONG_CONTEXT_THRESHOLD_TOKENS = 200_000
 
 const PRO_TIERED_PRICING: GeminiModelPricing = {
   input: 1.25,
   cachedInput: 0.3125,
-  output: 5,
-  inputTiers: [{ threshold: LONG_CONTEXT_THRESHOLD_TOKENS, price: 2.5 }],
-  cachedInputTiers: [{ threshold: LONG_CONTEXT_THRESHOLD_TOKENS, price: 0.625 }],
-  outputTiers: [{ threshold: LONG_CONTEXT_THRESHOLD_TOKENS, price: 10 }]
+  output: 10,
+  thresholdTokens: LONG_CONTEXT_THRESHOLD_TOKENS,
+  inputAboveThreshold: 2.5,
+  cachedInputAboveThreshold: 0.625,
+  outputAboveThreshold: 15
 }
 
 const FLASH_TIERED_PRICING: GeminiModelPricing = {
   input: 0.075,
   cachedInput: 0.01875,
   output: 0.3,
-  inputTiers: [{ threshold: LONG_CONTEXT_THRESHOLD_TOKENS, price: 0.15 }],
-  cachedInputTiers: [{ threshold: LONG_CONTEXT_THRESHOLD_TOKENS, price: 0.0375 }],
-  outputTiers: [{ threshold: LONG_CONTEXT_THRESHOLD_TOKENS, price: 0.6 }]
+  thresholdTokens: LONG_CONTEXT_THRESHOLD_TOKENS,
+  inputAboveThreshold: 0.15,
+  cachedInputAboveThreshold: 0.0375,
+  outputAboveThreshold: 0.6
 }
 
 const FLASH_LITE_PRICING: GeminiModelPricing = {
@@ -80,6 +82,7 @@ const MODEL_ALIASES: Record<string, string> = {
   'gemini-2.5-flash-thinking': 'gemini-2.5-flash',
   'gemini-thinking': 'gemini-2.5-flash'
 }
+
 export function normalizeModelForPricing(model: string | null): string | null {
   if (!model) {
     return null
@@ -100,6 +103,11 @@ export function normalizeModelForPricing(model: string | null): string | null {
 
   if (MODEL_PRICING[lower]) {
     return lower
+  }
+
+  // Why: require a Gemini prefix or substring so unrelated model IDs (e.g. custom 'pro' or 'opus') are rejected.
+  if (!lower.startsWith('gemini') && !lower.includes('gemini')) {
+    return null
   }
 
   // Handle flash-lite models

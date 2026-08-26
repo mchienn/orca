@@ -69,7 +69,7 @@ export function normalizeRawUsage(value: unknown): GeminiUsageRawUsage | null {
 
   const computedTotal = Math.max(
     explicitTotal,
-    inputTokens + outputTokens,
+    inputTokens + outputTokens + reasoningOutputTokens,
     inputTokens,
     outputTokens
   )

@@ -56,31 +56,53 @@ export function parseGeminiJsonDocument(
       continue
     }
 
-    if (msgRecord.type === 'user') {
+    const isUser =
+      msgRecord.type === 'user' ||
+      msgRecord.type === 'USER_INPUT' ||
+      msgRecord.source === 'USER_EXPLICIT' ||
+      msgRecord.source === 'USER'
+
+    if (isUser) {
       context.accumulatedPromptLength =
         (context.accumulatedPromptLength ?? 0) +
         (msgRecord.content ? String(msgRecord.content).length : 0)
       continue
     }
 
+    const isModel =
+      msgRecord.type === 'gemini' ||
+      msgRecord.type === 'assistant' ||
+      msgRecord.type === 'model' ||
+      msgRecord.type === 'PLANNER_RESPONSE' ||
+      msgRecord.source === 'MODEL'
+
     let rawUsage = normalizeRawUsage(msgRecord)
-    if (!rawUsage) {
+    let hasInferredPricing = false
+
+    if (!rawUsage && isModel) {
+      hasInferredPricing = true
       const contentLen = msgRecord.content ? String(msgRecord.content).length : 0
+      const toolCallsLen = msgRecord.tool_calls ? JSON.stringify(msgRecord.tool_calls).length : 0
+      const thinkingLen = msgRecord.thinking ? String(msgRecord.thinking).length : 0
       const inputTokens = Math.max(
         10,
         Math.ceil(((context.accumulatedPromptLength ?? 0) + 200) / 4)
       )
-      const outputTokens = Math.max(5, Math.ceil(contentLen / 4))
+      const outputTokens = Math.max(5, Math.ceil((contentLen + toolCallsLen) / 4))
+      const reasoningOutputTokens = thinkingLen > 0 ? Math.max(1, Math.ceil(thinkingLen / 4)) : 0
       rawUsage = {
         inputTokens,
         cachedInputTokens: 0,
         outputTokens,
-        reasoningOutputTokens: 0,
-        totalTokens: inputTokens + outputTokens
+        reasoningOutputTokens,
+        totalTokens: inputTokens + outputTokens + reasoningOutputTokens
       }
       context.accumulatedPromptLength = 0
     }
 
+    if (!rawUsage) {
+      continue
+    }
     const resolution = resolveGeminiUsageDelta(null, rawUsage, context.previousTotals)
     if (!resolution || resolution.kind === 'baseline') {
       if (resolution?.kind === 'baseline') {
@@ -96,7 +118,7 @@ export function parseGeminiJsonDocument(
       eventKey: buildGeminiUsageEventKey(timestamp, resolution.delta, null),
       model: msgModel ?? context.currentModel ?? 'gemini-2.5-pro',
       cwd: msgCwd,
-      hasInferredPricing: false,
+      hasInferredPricing,
       inputTokens: resolution.delta.inputTokens,
       cachedInputTokens: resolution.delta.cachedInputTokens,
       outputTokens: resolution.delta.outputTokens,

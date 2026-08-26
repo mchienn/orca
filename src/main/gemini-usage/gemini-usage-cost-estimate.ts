@@ -1,20 +1,4 @@
-import type { TieredPrice } from './gemini-model-pricing'
 import { MODEL_PRICING, normalizeModelForPricing } from './gemini-model-pricing'
-
-function calculateTieredCost(tokens: number, basePrice: number, tiers: TieredPrice[] = []): number {
-  let cost = 0
-  let lowerBound = 0
-  let activePrice = basePrice
-  for (const tier of tiers) {
-    if (tokens <= tier.threshold) {
-      return cost + Math.max(tokens - lowerBound, 0) * activePrice
-    }
-    cost += (tier.threshold - lowerBound) * activePrice
-    lowerBound = tier.threshold
-    activePrice = tier.price
-  }
-  return cost + Math.max(tokens - lowerBound, 0) * activePrice
-}
 
 export function estimateCostUsd(
   model: string | null,
@@ -31,10 +15,25 @@ export function estimateCostUsd(
   // Why: Gemini cached tokens are part of the prompt token bucket. Charge uncached
   // input on (input - cached) so cached tokens are billed at cached rate rather than double-billed.
   const nonCachedInputTokens = Math.max(inputTokens - clampedCached, 0)
+
+  // Why: Gemini API selects rate tier based on total prompt size (<= 200k vs > 200k).
+  const isLongContext =
+    pricing.thresholdTokens !== undefined && inputTokens > pricing.thresholdTokens
+  const inputRate =
+    isLongContext && pricing.inputAboveThreshold !== undefined
+      ? pricing.inputAboveThreshold
+      : pricing.input
+  const cachedRate =
+    isLongContext && pricing.cachedInputAboveThreshold !== undefined
+      ? pricing.cachedInputAboveThreshold
+      : pricing.cachedInput
+  const outputRate =
+    isLongContext && pricing.outputAboveThreshold !== undefined
+      ? pricing.outputAboveThreshold
+      : pricing.output
+
   return (
-    (calculateTieredCost(nonCachedInputTokens, pricing.input, pricing.inputTiers) +
-      calculateTieredCost(clampedCached, pricing.cachedInput, pricing.cachedInputTiers) +
-      calculateTieredCost(outputTokens, pricing.output, pricing.outputTiers)) /
+    (nonCachedInputTokens * inputRate + clampedCached * cachedRate + outputTokens * outputRate) /
     1_000_000
   )
 }

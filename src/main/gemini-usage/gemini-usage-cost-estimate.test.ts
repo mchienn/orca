@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { estimateCostUsd } from './gemini-usage-cost-estimate'
 
 describe('gemini-usage-cost-estimate', () => {
-  it('calculates standard cost for gemini-2.5-pro under context threshold', () => {
+  it('calculates standard cost for gemini-2.5-pro under context threshold (<= 200k tokens)', () => {
     // 1,000 input tokens at $1.25/M = $0.00125
     // 500 cached input tokens at $0.3125/M = $0.00015625
     // (non-cached input: 1,000 - 500 = 500 tokens at $1.25/M = $0.000625)
-    // 250 output tokens at $5.00/M = $0.00125
-    // Total = 0.000625 + 0.00015625 + 0.00125 = 0.00203125
+    // 250 output tokens at $10.00/M = $0.0025
+    // Total = 0.000625 + 0.00015625 + 0.0025 = 0.00328125
     const cost = estimateCostUsd('gemini-2.5-pro', 1_000, 500, 250)
-    expect(cost).toBeCloseTo(0.00203125, 6)
+    expect(cost).toBeCloseTo(0.00328125, 6)
   })
 
   it('calculates cost for gemini-2.5-flash with cached input', () => {
@@ -22,14 +22,14 @@ describe('gemini-usage-cost-estimate', () => {
     expect(cost).toBeCloseTo(0.0018, 6)
   })
 
-  it('handles long context (> 128k tokens) tiered pricing', () => {
-    // 200,000 input tokens (0 cached):
-    // 128,000 at $1.25/M = 0.16
-    // 72,000 at $2.50/M = 0.18
-    // output: 10,000 at $5.00/M = 0.05
-    // Total = 0.39
-    const cost = estimateCostUsd('gemini-2.5-pro', 200_000, 0, 10_000)
-    expect(cost).toBeCloseTo(0.39, 4)
+  it('handles long context (> 200k tokens) rate tier pricing based on prompt size', () => {
+    // 250,000 input tokens (50,000 cached), 10,000 output:
+    // non-cached input: 200,000 * $2.50 / 1M = $0.50
+    // cached input: 50,000 * $0.625 / 1M = $0.03125
+    // output: 10,000 * $15.00 / 1M = $0.15
+    // Total = 0.68125
+    const cost = estimateCostUsd('gemini-2.5-pro', 250_000, 50_000, 10_000)
+    expect(cost).toBeCloseTo(0.68125, 5)
   })
 
   it('clamps cached tokens when cachedInputTokens exceeds inputTokens', () => {
@@ -41,6 +41,7 @@ describe('gemini-usage-cost-estimate', () => {
 
   it('returns null for unknown models', () => {
     expect(estimateCostUsd('unknown-model-xyz', 1_000, 0, 500)).toBeNull()
+    expect(estimateCostUsd('custom-pro-model', 1_000, 0, 500)).toBeNull()
     expect(estimateCostUsd(null, 1_000, 0, 500)).toBeNull()
   })
 })

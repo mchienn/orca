@@ -39,6 +39,7 @@ export function GeminiUsageDetails({
             tokens: row.totalTokens,
             sessions: row.sessions,
             eventsOrTurns: row.events,
+            estimatedCostUsd: row.estimatedCostUsd,
             hasInferredPricing: row.hasInferredPricing
           }))}
           eventsOrTurns="events"
@@ -52,7 +53,9 @@ export function GeminiUsageDetails({
             label: row.label,
             tokens: row.totalTokens,
             sessions: row.sessions,
-            eventsOrTurns: row.events
+            eventsOrTurns: row.events,
+            estimatedCostUsd: row.estimatedCostUsd,
+            hasInferredPricing: row.hasInferredPricing
           }))}
           eventsOrTurns="events"
         />

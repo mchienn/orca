@@ -136,6 +136,15 @@ export function buildBreakdown(
     existing.reasoningOutputTokens += daily.reasoningOutputTokens
     existing.totalTokens += daily.totalTokens
     existing.hasInferredPricing ||= daily.hasInferredPricing
+    const dailyCost = estimateCostUsd(
+      daily.model,
+      daily.inputTokens,
+      daily.cachedInputTokens,
+      daily.outputTokens
+    )
+    if (dailyCost !== null) {
+      existing.estimatedCostUsd = (existing.estimatedCostUsd ?? 0) + dailyCost
+    }
     rows.set(key, existing)
   }
 
@@ -171,12 +180,14 @@ export function buildBreakdown(
   }
 
   for (const row of rows.values()) {
-    row.estimatedCostUsd = estimateCostUsd(
-      kind === 'model' ? row.key : null,
-      row.inputTokens,
-      row.cachedInputTokens,
-      row.outputTokens
-    )
+    if (kind === 'model' && row.estimatedCostUsd === null) {
+      row.estimatedCostUsd = estimateCostUsd(
+        row.key,
+        row.inputTokens,
+        row.cachedInputTokens,
+        row.outputTokens
+      )
+    }
   }
 
   return [...rows.values()].sort((left, right) => right.totalTokens - left.totalTokens)

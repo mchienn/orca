@@ -1,16 +1,7 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
 import type { GeminiUsageDailyPoint } from '../../../../shared/gemini-usage-types'
+import { formatTokens } from './usage-formatters'
 import { translate } from '@/i18n/i18n'
-
-function formatTokens(value: number): string {
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1)}M`
-  }
-  if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(1)}k`
-  }
-  return value.toLocaleString()
-}
 
 function getMaxDailyTotal(daily: GeminiUsageDailyPoint[]): number {
   let max = 1
@@ -25,7 +16,8 @@ type GeminiUsageDailyChartProps = {
 }
 
 export function GeminiUsageDailyChart({ daily }: GeminiUsageDailyChartProps): React.JSX.Element {
-  const maxDailyTotal = getMaxDailyTotal(daily)
+  const visibleDaily = daily.slice(-10)
+  const maxDailyTotal = getMaxDailyTotal(visibleDaily)
 
   return (
     <section className="rounded-lg border border-border/60 bg-card/40 p-4">
@@ -41,7 +33,7 @@ export function GeminiUsageDailyChart({ daily }: GeminiUsageDailyChartProps): Re
         </p>
       </div>
       <div className="grid h-56 grid-cols-10 items-end gap-3">
-        {daily.slice(-10).map((entry) => {
+        {visibleDaily.map((entry) => {
           const segments = [
             {
               key: 'input',

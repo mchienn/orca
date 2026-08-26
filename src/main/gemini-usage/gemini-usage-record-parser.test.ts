@@ -53,7 +53,7 @@ describe('gemini-usage-record-parser', () => {
     expect(event?.cachedInputTokens).toBe(400)
     expect(event?.outputTokens).toBe(300)
     expect(event?.reasoningOutputTokens).toBe(50)
-    expect(event?.totalTokens).toBe(1500)
+    expect(event?.totalTokens).toBe(1550)
   })
 
   it('parses Antigravity transcript lines with usage records', () => {
@@ -89,7 +89,7 @@ describe('gemini-usage-record-parser', () => {
     expect(event?.cachedInputTokens).toBe(800)
     expect(event?.outputTokens).toBe(600)
     expect(event?.reasoningOutputTokens).toBe(150)
-    expect(event?.totalTokens).toBe(2600)
+    expect(event?.totalTokens).toBe(2750)
   })
 
   it('parses whole Gemini JSON session documents', () => {

@@ -1,5 +1,4 @@
 import { basename, dirname, join } from 'node:path'
-import { homedir } from 'node:os'
 import { createReadStream, existsSync } from 'node:fs'
 import { readFile, stat } from 'node:fs/promises'
 import { createInterface, type Interface } from 'node:readline'
@@ -7,6 +6,7 @@ import { canonicalizeUsageWorktreePaths } from '../usage-worktree-canonicalizer'
 import { createUsageEventAggregation } from '../usage/usage-event-aggregation'
 import {
   canonicalizePath,
+  getAntigravityBrainDirectory,
   listGeminiSessionFiles,
   yieldToEventLoop
 } from './gemini-session-file-discovery'
@@ -70,29 +70,33 @@ function extractSessionIdFromPath(filePath: string): string {
 
 async function loadAntigravityHistory(brainOrFilePath: string): Promise<Map<string, string>> {
   const historyMap = new Map<string, string>()
+  const configuredBrainDir = getAntigravityBrainDirectory()
   const possiblePaths = [
-    join(homedir(), '.gemini', 'antigravity-cli', 'history.jsonl'),
+    join(dirname(configuredBrainDir), 'history.jsonl'),
+    join(configuredBrainDir, 'history.jsonl'),
     join(dirname(brainOrFilePath), 'history.jsonl'),
     join(dirname(dirname(brainOrFilePath)), 'history.jsonl')
   ]
+  const seenPaths = new Set<string>()
   for (const histPath of possiblePaths) {
-    if (existsSync(histPath)) {
-      try {
-        const content = await readFile(histPath, 'utf-8')
-        for (const line of content.split(/\r?\n/)) {
-          if (!line.trim()) {
-            continue
-          }
-          try {
-            const entry = JSON.parse(line) as { conversationId?: string; workspace?: string }
-            if (entry.conversationId && entry.workspace) {
-              historyMap.set(entry.conversationId, entry.workspace)
-            }
-          } catch {}
-        }
-        break
-      } catch {}
+    if (seenPaths.has(histPath) || !existsSync(histPath)) {
+      continue
     }
+    seenPaths.add(histPath)
+    try {
+      const content = await readFile(histPath, 'utf-8')
+      for (const line of content.split(/\r?\n/)) {
+        if (!line.trim()) {
+          continue
+        }
+        try {
+          const entry = JSON.parse(line) as { conversationId?: string; workspace?: string }
+          if (entry.conversationId && entry.workspace) {
+            historyMap.set(entry.conversationId, entry.workspace)
+          }
+        } catch {}
+      }
+    } catch {}
   }
   return historyMap
 }
@@ -216,7 +220,7 @@ export async function scanGeminiUsageFiles(
   dailyAggregates: GeminiUsageDailyAggregate[]
 }> {
   const files = await listGeminiSessionFiles()
-  const historyMap = await loadAntigravityHistory(files[0] ?? '')
+  const historyCache = new Map<string, Map<string, string>>()
   const previousByPath = new Map(previousProcessedFiles.map((file) => [file.path, file]))
   const worktreesWithCanonicalPaths = await buildWorktreesWithCanonicalPaths(worktrees)
 
@@ -262,6 +266,12 @@ export async function scanGeminiUsageFiles(
 
   const parsedByPath = new Map<string, GeminiUsagePersistedFile>()
   for (const [index, filePath] of pathsToParse.entries()) {
+    const dirKey = dirname(filePath)
+    let historyMap = historyCache.get(dirKey)
+    if (!historyMap) {
+      historyMap = await loadAntigravityHistory(filePath)
+      historyCache.set(dirKey, historyMap)
+    }
     const processed = await parseGeminiUsageFile(filePath, worktreesWithCanonicalPaths, {
       historyMap,
       claimEventKey: (eventKey) => {

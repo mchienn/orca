@@ -57,6 +57,9 @@ function findContainingWorktree(
   worktrees: (GeminiUsageWorktreeRef & { canonicalPath: string })[]
 ): GeminiUsageWorktreeRef | null {
   const normalizedCwd = normalizeComparablePath(cwd)
+  let best: GeminiUsageWorktreeRef | null = null
+  let bestLength = -1
+
   for (const worktree of worktrees) {
     if (
       areWorktreePathsEqual(worktree.path, cwd) ||
@@ -64,16 +67,18 @@ function findContainingWorktree(
     ) {
       return worktree
     }
-    const normalizedWorktree = normalizeComparablePath(worktree.path)
-    const normalizedCanonical = normalizeComparablePath(worktree.canonicalPath)
-    if (
-      isContainingPath(normalizedWorktree, normalizedCwd) ||
-      isContainingPath(normalizedCanonical, normalizedCwd)
-    ) {
-      return worktree
+    for (const candidate of [worktree.path, worktree.canonicalPath]) {
+      const normalizedCandidate = normalizeComparablePath(candidate)
+      if (
+        isContainingPath(normalizedCandidate, normalizedCwd) &&
+        normalizedCandidate.length > bestLength
+      ) {
+        best = worktree
+        bestLength = normalizedCandidate.length
+      }
     }
   }
-  return null
+  return best
 }
 
 export async function attributeGeminiUsageEvent(
