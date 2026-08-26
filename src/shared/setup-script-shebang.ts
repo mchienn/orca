@@ -55,6 +55,15 @@ export function scriptDeclaresPowerShell(script: string): boolean {
   return shebang !== null && POWERSHELL_SHELL_BASENAMES.has(shebang.interpreter)
 }
 
+/** Returns the executable name ('pwsh.exe' or 'powershell.exe') when the script names PowerShell, or null. */
+export function getPowerShellInterpreterExecutable(script: string): string | null {
+  const shebang = parseSetupScriptShebang(script)
+  if (!shebang || !POWERSHELL_SHELL_BASENAMES.has(shebang.interpreter)) {
+    return null
+  }
+  return shebang.interpreter === 'pwsh' ? 'pwsh.exe' : 'powershell.exe'
+}
+
 /** Drops a leading `#!` line; the generated runner carries its own interpreter line. */
 export function stripLeadingShebangLine(script: string): string {
   if (!isShebangLine(script.split('\n', 1)[0] ?? '')) {

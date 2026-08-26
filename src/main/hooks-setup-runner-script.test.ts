@@ -170,7 +170,7 @@ describe('createSetupRunnerScript', () => {
       )
       expect(result).toMatchObject({
         runnerScriptPath: 'C:\\repo\\.git\\orca\\setup-runner.ps1',
-        shell: { family: 'powershell' }
+        shell: { family: 'powershell', executable: 'pwsh.exe' }
       })
     } finally {
       Object.defineProperty(process, 'platform', { configurable: true, value: originalPlatform })

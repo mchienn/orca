@@ -59,21 +59,22 @@ Windows). The `#!` line therefore:
 - Treats `#!/bin/sh` and `#!/bin/zsh` as bash, matching macOS and Linux behavior.
 
 For PowerShell (`pwsh` or `powershell`), the generated runner is written as `.ps1` with
-`$ErrorActionPreference = 'Stop'` and `$PSNativeCommandUseErrorActionPreference = $true` for
-fail-fast execution, and executed via PowerShell.
+`$ErrorActionPreference = 'Stop'` and `$PSNativeCommandUseErrorActionPreference = $true` (on
+PowerShell 7.3+) for fail-fast execution, and executed via PowerShell.
+
 ## Requirements for the bash runner
 
-A `#!` line only takes effect when Orca can actually launch bash from the configured terminal — the
-terminal shell must resolve to Git Bash (`resolveWindowsGitBashShellPath`). The generated runner
-uses MSYS `/c/...` paths, which Cygwin and the WSL shim do not accept, and the launch command is
-typed into whatever shell the terminal opened with.
+A POSIX `#!` line only takes effect when Orca can actually launch bash from the configured
+terminal — the terminal shell must resolve to Git Bash (`resolveWindowsGitBashShellPath`). The
+generated runner uses MSYS `/c/...` paths, which Cygwin and the WSL shim do not accept, and the
+launch command is typed into whatever shell the terminal opened with.
 
-When bash is not available (a PowerShell/cmd terminal, or an SSH-to-Windows host, which always uses
-the remote's `.cmd` runner) the `#!` script is **not** executed under cmd. The generated `.cmd`
-runner prints why and exits 1, because running the interpreter-agnostic prefix of a bash script
-(`pnpm install`, `git submodule update`) and only failing at the first bash-only line leaves a
-half-set-up worktree that looks finished.
-
+When bash is not available (such as a CMD terminal attempting to run a bash `#!` script) the
+POSIX `#!` script is **not** executed under cmd. The generated `.cmd` runner prints why and exits 1,
+because running the interpreter-agnostic prefix of a bash script (`pnpm install`, `git submodule
+update`) and only failing at the first bash-only line leaves a half-set-up worktree that looks
+finished. Remote Windows SSH hosts support `.cmd` runners and `.ps1` runners (when declared with a
+PowerShell shebang).
 ## Launching a `.cmd` runner from a Git Bash terminal
 
 The runner format and the shell that types the launch command are independent: a Git Bash terminal

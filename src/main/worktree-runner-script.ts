@@ -2,7 +2,11 @@ import { mkdirSync, writeFileSync, chmodSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { shouldWaitForSetupBeforeAgentStartup } from '../shared/setup-agent-startup-policy'
 import { nativeWindowsPathToPosixShellPath } from '../shared/setup-runner-command'
-import { scriptDeclaresPosixShell, scriptDeclaresPowerShell } from '../shared/setup-script-shebang'
+import {
+  getPowerShellInterpreterExecutable,
+  scriptDeclaresPosixShell,
+  scriptDeclaresPowerShell
+} from '../shared/setup-script-shebang'
 import { resolveWindowsShellStartupFamily } from '../shared/windows-terminal-shell'
 import { resolveWindowsGitBashShellPath } from './git-bash'
 import { gitExecFileSync } from './git/runner'
@@ -95,9 +99,12 @@ function createWorktreeRunnerScript(args: {
   // written in, and every pre-existing Windows script was authored against the cmd runner. Only a
   // `#!` line opts a script into bash, so the same orca.yaml runs identically for every Windows
   // user of the repo instead of following whichever terminal each of them happens to prefer.
+  const declaredPowerShellExe = nativeWindowsWorktree
+    ? getPowerShellInterpreterExecutable(script)
+    : null
   const runnerShell: SetupRunnerShell = nativeWindowsWorktree
-    ? scriptDeclaresPowerShell(script)
-      ? { family: 'powershell' }
+    ? declaredPowerShellExe
+      ? { family: 'powershell', executable: declaredPowerShellExe }
       : setupShell?.family === 'posix' && scriptDeclaresPosixShell(script)
         ? setupShell
         : { family: 'cmd' }

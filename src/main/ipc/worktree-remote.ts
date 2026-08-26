@@ -55,7 +55,7 @@ import {
   buildPowerShellRunnerScript,
   buildWindowsRunnerScript
 } from '../setup-runner-script-text'
-import { scriptDeclaresPowerShell } from '../../shared/setup-script-shebang'
+import { getPowerShellInterpreterExecutable, scriptDeclaresPowerShell } from '../../shared/setup-script-shebang'
 import { createSetupRunnerScript, resolveSetupRunnerShell } from '../worktree-runner-script'
 import { getSetupRunnerEnvVars } from '../setup-hook-env-vars'
 import {
@@ -1193,7 +1193,10 @@ async function createRemoteSetupRunnerScript(
   fsProvider: IFilesystemProvider
 ): Promise<CreateWorktreeResult['setup']> {
   const useWindowsFormat = isWindowsAbsolutePathLike(worktreePath)
-  const isPowerShell = useWindowsFormat && scriptDeclaresPowerShell(script)
+  const declaredPowerShellExe = useWindowsFormat
+    ? getPowerShellInterpreterExecutable(script)
+    : null
+  const isPowerShell = declaredPowerShellExe !== null
   // Why: SSH terminals choose their shell on the remote host; local Windows
   // preferences cannot safely select a remote runner format or launch command.
   const runnerRelativePath = isPowerShell
@@ -1221,6 +1224,7 @@ async function createRemoteSetupRunnerScript(
   return {
     runnerScriptPath,
     envVars: getSetupRunnerEnvVars(repo, worktreePath),
+    ...(isPowerShell ? { shell: { family: 'powershell', executable: declaredPowerShellExe } } : {}),
     ...(shouldWaitForSetupBeforeAgentStartup(repo.hookSettings?.setupAgentStartupPolicy)
       ? { waitForAgentStartup: true }
       : {})

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  getPowerShellInterpreterExecutable,
   isShebangLine,
   parseSetupScriptShebang,
   scriptDeclaresPosixShell,
@@ -57,6 +58,19 @@ describe('scriptDeclaresPowerShell', () => {
     expect(scriptDeclaresPowerShell('#!/bin/sh\npnpm install')).toBe(false)
     expect(scriptDeclaresPowerShell('#!/usr/bin/env node\nconsole.log(1)')).toBe(false)
     expect(scriptDeclaresPowerShell('Write-Host 1')).toBe(false)
+  })
+})
+
+describe('getPowerShellInterpreterExecutable', () => {
+  it('resolves pwsh to pwsh.exe and powershell to powershell.exe', () => {
+    expect(getPowerShellInterpreterExecutable('#!/usr/bin/env pwsh\nWrite-Host 1')).toBe('pwsh.exe')
+    expect(getPowerShellInterpreterExecutable('#!/usr/bin/env powershell\nWrite-Host 1')).toBe(
+      'powershell.exe'
+    )
+    expect(getPowerShellInterpreterExecutable('#!pwsh\nWrite-Host 1')).toBe('pwsh.exe')
+    expect(getPowerShellInterpreterExecutable('#!powershell.exe\nWrite-Host 1')).toBe('powershell.exe')
+    expect(getPowerShellInterpreterExecutable('#!/usr/bin/env bash\npnpm install')).toBeNull()
+    expect(getPowerShellInterpreterExecutable('Write-Host 1')).toBeNull()
   })
 })
 
