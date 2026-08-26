@@ -64,19 +64,8 @@ export function resolveSetupRunnerCommand(
     // what can execute it. A batch runner never goes to bash, and a .ps1 runner always invokes PowerShell.
     const psRunnerFile = isWindowsPowerShellRunnerPath(runnerScriptPath)
     if (psRunnerFile) {
-      if (shell?.family === 'powershell') {
-        return {
-          command: `& '${runnerScriptPath.replace(/'/g, "''")}'`,
-          runnerScriptPathForShell: runnerScriptPath,
-          shell: 'windows'
-        }
-      }
       const rawExecutable = shell?.executable?.trim()
-      const executable =
-        rawExecutable &&
-        (/pwsh(\.exe)?$/i.test(rawExecutable) || /powershell(\.exe)?$/i.test(rawExecutable))
-          ? rawExecutable
-          : 'powershell.exe'
+      const executable = rawExecutable || 'powershell.exe'
       const quotedExecutable = isWindowsAbsolutePathLike(executable) || /\s/.test(executable)
         ? quoteWindowsArg(executable)
         : executable

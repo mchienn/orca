@@ -109,12 +109,11 @@ function createWorktreeRunnerScript(args: {
         ? setupShell
         : { family: 'cmd' }
     : { family: 'posix' }
-  // Why: `shell` tells the launcher which shell types the command, not which format the runner
-  // file is in — the .cmd/.sh extension already carries that. Reporting the runner family here
-  // would make a Git Bash pane receive `cmd.exe /c ...`, whose `/c` MSYS rewrites into a drive
-  // path (issue #6896), so setup would open an interactive cmd and never run.
+  // Why: `shell` tells the launcher which shell to launch or type, carrying the runner format/metadata.
   const launchShell: SetupRunnerShell | undefined = nativeWindowsWorktree
-    ? (setupShell ?? { family: 'cmd' })
+    ? declaredPowerShellExe
+      ? { family: 'powershell', executable: declaredPowerShellExe }
+      : (setupShell ?? { family: 'cmd' })
     : process.platform === 'win32' && runtimeTarget?.wslDistro
       ? { family: 'posix', executable: 'wsl.exe' }
       : undefined

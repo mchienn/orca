@@ -108,14 +108,16 @@ describe('buildSetupRunnerCommand', () => {
     ).toBe('bash /c/repo/.git/orca/setup-runner.sh')
   })
 
-  it('invokes PowerShell scripts directly with call operator in a PowerShell pane', () => {
+  it('invokes PowerShell scripts with the declared executable when launched from a PowerShell pane', () => {
     expect(
       buildSetupRunnerCommand('C:\\repo\\.git\\orca\\setup-runner.ps1', 'windows', {
-        family: 'powershell'
+        family: 'powershell',
+        executable: 'pwsh.exe'
       })
-    ).toBe("& 'C:\\repo\\.git\\orca\\setup-runner.ps1'")
+    ).toBe(
+      'pwsh.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "C:\\repo\\.git\\orca\\setup-runner.ps1"'
+    )
   })
-
   it('invokes PowerShell scripts with powershell.exe when launched from a CMD pane', () => {
     expect(
       buildSetupRunnerCommand('C:\\repo\\.git\\orca\\setup-runner.ps1', 'windows', {
