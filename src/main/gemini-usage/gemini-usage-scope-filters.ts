@@ -1,13 +1,7 @@
 import type { GeminiUsageRange, GeminiUsageScope } from '../../shared/gemini-usage-types'
 import type { GeminiUsagePersistedState } from './types'
 import { getUsageRangeCutoff } from '../usage/usage-calendar-range'
-
-function addCost(left: number | null, right: number | null): number | null {
-  if (left === null && right === null) {
-    return null
-  }
-  return (left ?? 0) + (right ?? 0)
-}
+import { addCost } from './gemini-usage-cost-estimate'
 
 export type ScopedGeminiUsageModelRow = {
   modelKey: string

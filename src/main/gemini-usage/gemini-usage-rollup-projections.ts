@@ -47,7 +47,13 @@ export function buildSummary(
     byProject.set(row.projectLabel, (byProject.get(row.projectLabel) ?? 0) + row.totalTokens)
     const cost =
       row.estimatedCostUsd ??
-      estimateCostUsd(row.model, row.inputTokens, row.cachedInputTokens, row.outputTokens)
+      estimateCostUsd(
+        row.model,
+        row.inputTokens,
+        row.cachedInputTokens,
+        row.outputTokens,
+        row.reasoningOutputTokens
+      )
     if (cost !== null) {
       hasAnyBillableCost = true
       estimatedCostUsd += cost
@@ -135,7 +141,13 @@ export function buildBreakdown(
     existing.hasInferredPricing ||= daily.hasInferredPricing
     const cost =
       daily.estimatedCostUsd ??
-      estimateCostUsd(daily.model, daily.inputTokens, daily.cachedInputTokens, daily.outputTokens)
+      estimateCostUsd(
+        daily.model,
+        daily.inputTokens,
+        daily.cachedInputTokens,
+        daily.outputTokens,
+        daily.reasoningOutputTokens
+      )
     if (cost !== null) {
       existing.estimatedCostUsd = (existing.estimatedCostUsd ?? 0) + cost
     }
@@ -179,10 +191,10 @@ export function buildBreakdown(
         row.key,
         row.inputTokens,
         row.cachedInputTokens,
-        row.outputTokens
+        row.outputTokens,
+        row.reasoningOutputTokens
       )
     }
   }
-
   return [...rows.values()].sort((left, right) => right.totalTokens - left.totalTokens)
 }

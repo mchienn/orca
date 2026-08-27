@@ -4,6 +4,7 @@ import { readFile, stat } from 'node:fs/promises'
 import { createInterface, type Interface } from 'node:readline'
 import { canonicalizeUsageWorktreePaths } from '../usage-worktree-canonicalizer'
 import { createUsageEventAggregation } from '../usage/usage-event-aggregation'
+import { addCost } from './gemini-usage-cost-estimate'
 import {
   canonicalizePath,
   extractSessionIdFromPath,
@@ -48,13 +49,6 @@ async function buildWorktreesWithCanonicalPaths(
   worktrees: GeminiUsageWorktreeRef[]
 ): Promise<(GeminiUsageWorktreeRef & { canonicalPath: string })[]> {
   return canonicalizeUsageWorktreePaths(worktrees, canonicalizePath)
-}
-
-function addCost(left: number | null, right: number | null): number | null {
-  if (left === null && right === null) {
-    return null
-  }
-  return (left ?? 0) + (right ?? 0)
 }
 
 type GeminiUsageMetric = {

@@ -233,15 +233,19 @@ export function parseGeminiUsageRecord(
   }
 
   context.previousTotals = resolution.nextTotals
-  const activeModel = extractModel(payload) ?? context.currentModel ?? 'gemini-2.5-pro'
+  const explicitModel = extractModel(payload) ?? context.currentModel
+  const activeModel = explicitModel ?? 'gemini-2.5-pro'
+  if (!explicitModel) {
+    hasInferredPricing = true
+  }
   const activeCwd = extractCwd(payload) ?? context.currentCwd ?? context.sessionCwd
   const estimatedCostUsd = estimateCostUsd(
     activeModel,
     resolution.delta.inputTokens,
     resolution.delta.cachedInputTokens,
-    resolution.delta.outputTokens
+    resolution.delta.outputTokens,
+    resolution.delta.reasoningOutputTokens
   )
-
   return {
     sessionId: context.sessionId || 'gemini-session',
     timestamp,
