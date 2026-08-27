@@ -16,12 +16,14 @@ export type GeminiUsageLocationBreakdown = {
   reasoningOutputTokens: number
   totalTokens: number
   hasInferredPricing: boolean
+  estimatedCostUsd: number | null
 }
 
 export type GeminiUsageModelBreakdown = {
   modelKey: string
   modelLabel: string
   hasInferredPricing: boolean
+  estimatedCostUsd: number | null
   eventCount: number
   inputTokens: number
   cachedInputTokens: number
@@ -43,6 +45,7 @@ export type GeminiUsageLocationModelBreakdown = {
   reasoningOutputTokens: number
   totalTokens: number
   hasInferredPricing: boolean
+  estimatedCostUsd: number | null
 }
 
 export type GeminiUsageSession = {
@@ -62,6 +65,7 @@ export type GeminiUsageSession = {
   totalReasoningOutputTokens: number
   totalTokens: number
   hasInferredPricing: boolean
+  estimatedCostUsd: number | null
   locationBreakdown: GeminiUsageLocationBreakdown[]
   modelBreakdown: GeminiUsageModelBreakdown[]
   locationModelBreakdown: GeminiUsageLocationModelBreakdown[]
@@ -81,18 +85,13 @@ export type GeminiUsageDailyAggregate = {
   reasoningOutputTokens: number
   totalTokens: number
   hasInferredPricing: boolean
+  estimatedCostUsd: number | null
 }
 
 export type GeminiUsagePersistedFile = GeminiUsageProcessedFile & {
   sessions: GeminiUsageSession[]
   dailyAggregates: GeminiUsageDailyAggregate[]
-  /** Event keys this file counted. Resumed/forked rollouts or transcripts copy earlier
-   *  records into new files; ownership keeps each record counted by exactly one
-   *  cached file across incremental scans. */
   ownedEventKeys: string[]
-  /** True when this file saw events already claimed by another file. When that
-   *  owner disappears, only deferred files need reparse to reclaim — not the
-   *  entire corpus. */
   hasDeferredClaims: boolean
 }
 
@@ -113,12 +112,11 @@ export type GeminiUsagePersistedState = {
 export type GeminiUsageParsedEvent = {
   sessionId: string
   timestamp: string
-  /** Raw-record identity (timestamp + token tuples) used to dedupe the same
-   *  event copied across fork/resume session files. */
   eventKey: string
   model: string | null
   cwd: string | null
   hasInferredPricing: boolean
+  estimatedCostUsd: number | null
   inputTokens: number
   cachedInputTokens: number
   outputTokens: number

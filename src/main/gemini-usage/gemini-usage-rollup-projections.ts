@@ -45,12 +45,9 @@ export function buildSummary(
       (byModel.get(row.model ?? 'Unknown model') ?? 0) + row.totalTokens
     )
     byProject.set(row.projectLabel, (byProject.get(row.projectLabel) ?? 0) + row.totalTokens)
-    const cost = estimateCostUsd(
-      row.model,
-      row.inputTokens,
-      row.cachedInputTokens,
-      row.outputTokens
-    )
+    const cost =
+      row.estimatedCostUsd ??
+      estimateCostUsd(row.model, row.inputTokens, row.cachedInputTokens, row.outputTokens)
     if (cost !== null) {
       hasAnyBillableCost = true
       estimatedCostUsd += cost
@@ -136,14 +133,11 @@ export function buildBreakdown(
     existing.reasoningOutputTokens += daily.reasoningOutputTokens
     existing.totalTokens += daily.totalTokens
     existing.hasInferredPricing ||= daily.hasInferredPricing
-    const dailyCost = estimateCostUsd(
-      daily.model,
-      daily.inputTokens,
-      daily.cachedInputTokens,
-      daily.outputTokens
-    )
-    if (dailyCost !== null) {
-      existing.estimatedCostUsd = (existing.estimatedCostUsd ?? 0) + dailyCost
+    const cost =
+      daily.estimatedCostUsd ??
+      estimateCostUsd(daily.model, daily.inputTokens, daily.cachedInputTokens, daily.outputTokens)
+    if (cost !== null) {
+      existing.estimatedCostUsd = (existing.estimatedCostUsd ?? 0) + cost
     }
     rows.set(key, existing)
   }

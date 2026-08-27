@@ -62,7 +62,8 @@ describe('GeminiUsageStore', () => {
           outputTokens: 1_000,
           reasoningOutputTokens: 200,
           totalTokens: 11_000,
-          hasInferredPricing: false
+          hasInferredPricing: false,
+          estimatedCostUsd: 0.02
         }
       ],
       sessions: [
@@ -83,6 +84,7 @@ describe('GeminiUsageStore', () => {
           totalReasoningOutputTokens: 200,
           totalTokens: 11_000,
           hasInferredPricing: false,
+          estimatedCostUsd: 0.02,
           locationBreakdown: [
             {
               locationKey: 'worktree:wt-1',
@@ -95,7 +97,8 @@ describe('GeminiUsageStore', () => {
               outputTokens: 1_000,
               reasoningOutputTokens: 200,
               totalTokens: 11_000,
-              hasInferredPricing: false
+              hasInferredPricing: false,
+              estimatedCostUsd: 0.02
             }
           ],
           modelBreakdown: [
@@ -103,6 +106,7 @@ describe('GeminiUsageStore', () => {
               modelKey: 'gemini-2.5-pro',
               modelLabel: 'gemini-2.5-pro',
               hasInferredPricing: false,
+              estimatedCostUsd: 0.02,
               eventCount: 3,
               inputTokens: 10_000,
               cachedInputTokens: 2_000,
@@ -160,7 +164,8 @@ describe('GeminiUsageStore', () => {
           outputTokens: 100,
           reasoningOutputTokens: 0,
           totalTokens: 600,
-          hasInferredPricing: false
+          hasInferredPricing: false,
+          estimatedCostUsd: 0.0001
         }
       ],
       sessions: [
@@ -181,6 +186,7 @@ describe('GeminiUsageStore', () => {
           totalReasoningOutputTokens: 0,
           totalTokens: 600,
           hasInferredPricing: false,
+          estimatedCostUsd: 0.0001,
           locationBreakdown: [
             {
               locationKey: 'path:/outside',
@@ -193,7 +199,8 @@ describe('GeminiUsageStore', () => {
               outputTokens: 100,
               reasoningOutputTokens: 0,
               totalTokens: 600,
-              hasInferredPricing: false
+              hasInferredPricing: false,
+              estimatedCostUsd: 0.0001
             }
           ],
           modelBreakdown: [],

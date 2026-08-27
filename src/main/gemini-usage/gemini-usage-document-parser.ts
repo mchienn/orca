@@ -4,6 +4,7 @@ import {
   normalizeRawUsage,
   resolveGeminiUsageDelta
 } from './gemini-usage-token-delta'
+import { estimateCostUsd } from './gemini-usage-cost-estimate'
 import {
   extractCwd,
   extractModel,
@@ -59,9 +60,9 @@ export function parseGeminiJsonDocument(
     const isUser =
       msgRecord.type === 'user' ||
       msgRecord.type === 'USER_INPUT' ||
+      msgRecord.type === 'REQUEST' ||
       msgRecord.source === 'USER_EXPLICIT' ||
       msgRecord.source === 'USER'
-
     if (isUser) {
       context.accumulatedPromptLength =
         (context.accumulatedPromptLength ?? 0) +
@@ -112,13 +113,22 @@ export function parseGeminiJsonDocument(
     }
 
     context.previousTotals = resolution.nextTotals
+    const activeModel = msgModel ?? context.currentModel ?? 'gemini-2.5-pro'
+    const estimatedCostUsd = estimateCostUsd(
+      activeModel,
+      resolution.delta.inputTokens,
+      resolution.delta.cachedInputTokens,
+      resolution.delta.outputTokens
+    )
+
     events.push({
       sessionId: context.sessionId || 'gemini-session',
       timestamp,
       eventKey: buildGeminiUsageEventKey(timestamp, resolution.delta, null),
-      model: msgModel ?? context.currentModel ?? 'gemini-2.5-pro',
+      model: activeModel,
       cwd: msgCwd,
       hasInferredPricing,
+      estimatedCostUsd,
       inputTokens: resolution.delta.inputTokens,
       cachedInputTokens: resolution.delta.cachedInputTokens,
       outputTokens: resolution.delta.outputTokens,

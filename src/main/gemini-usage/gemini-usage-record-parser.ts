@@ -5,6 +5,7 @@ import {
   resolveGeminiUsageDelta,
   type GeminiUsageRawUsage
 } from './gemini-usage-token-delta'
+import { estimateCostUsd } from './gemini-usage-cost-estimate'
 import type { GeminiUsageParsedEvent } from './types'
 
 export type GeminiUsageParseContext = {
@@ -234,6 +235,12 @@ export function parseGeminiUsageRecord(
   context.previousTotals = resolution.nextTotals
   const activeModel = extractModel(payload) ?? context.currentModel ?? 'gemini-2.5-pro'
   const activeCwd = extractCwd(payload) ?? context.currentCwd ?? context.sessionCwd
+  const estimatedCostUsd = estimateCostUsd(
+    activeModel,
+    resolution.delta.inputTokens,
+    resolution.delta.cachedInputTokens,
+    resolution.delta.outputTokens
+  )
 
   return {
     sessionId: context.sessionId || 'gemini-session',
@@ -242,6 +249,7 @@ export function parseGeminiUsageRecord(
     model: activeModel,
     cwd: activeCwd,
     hasInferredPricing,
+    estimatedCostUsd,
     inputTokens: resolution.delta.inputTokens,
     cachedInputTokens: resolution.delta.cachedInputTokens,
     outputTokens: resolution.delta.outputTokens,

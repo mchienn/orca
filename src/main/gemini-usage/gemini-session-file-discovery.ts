@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
-import { readdir, realpath, stat } from 'node:fs/promises'
+import { readFile, readdir, realpath, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { normalizeFsPath } from '../usage/usage-path-comparison'
 
 const YIELD_EVERY_DISCOVERY_ENTRIES = 100
@@ -94,6 +94,60 @@ export function getAntigravityBrainDirectory(): string {
 export function getGeminiSessionDirectories(): string[] {
   const dirs = [getGeminiSessionsDirectory(), getAntigravityBrainDirectory()]
   return dirs.filter((dirPath, index, allDirPaths) => allDirPaths.indexOf(dirPath) === index)
+}
+
+export function extractSessionIdFromPath(filePath: string): string {
+  const segments = filePath.split(/[\\/]+/).filter(Boolean)
+  const lastIndex = segments.length - 1
+  if (
+    segments[lastIndex] === 'transcript.jsonl' ||
+    segments[lastIndex] === 'transcript_full.jsonl'
+  ) {
+    if (
+      segments[lastIndex - 1] === 'logs' &&
+      segments[lastIndex - 2] === '.system_generated' &&
+      segments[lastIndex - 3]
+    ) {
+      return segments[lastIndex - 3]
+    }
+  }
+  const isJson = filePath.endsWith('.json')
+  return basename(filePath, isJson ? '.json' : '.jsonl')
+}
+
+export async function loadAntigravityHistory(
+  brainOrFilePath: string
+): Promise<Map<string, string>> {
+  const historyMap = new Map<string, string>()
+  const configuredBrainDir = getAntigravityBrainDirectory()
+  const possiblePaths = [
+    join(dirname(configuredBrainDir), 'history.jsonl'),
+    join(configuredBrainDir, 'history.jsonl'),
+    join(dirname(brainOrFilePath), 'history.jsonl'),
+    join(dirname(dirname(brainOrFilePath)), 'history.jsonl')
+  ]
+  const seenPaths = new Set<string>()
+  for (const histPath of possiblePaths) {
+    if (seenPaths.has(histPath) || !existsSync(histPath)) {
+      continue
+    }
+    seenPaths.add(histPath)
+    try {
+      const content = await readFile(histPath, 'utf-8')
+      for (const line of content.split(/\r?\n/)) {
+        if (!line.trim()) {
+          continue
+        }
+        try {
+          const entry = JSON.parse(line) as { conversationId?: string; workspace?: string }
+          if (entry.conversationId && entry.workspace) {
+            historyMap.set(entry.conversationId, entry.workspace)
+          }
+        } catch {}
+      }
+    } catch {}
+  }
+  return historyMap
 }
 
 async function getPhysicalFileAliasKey(filePath: string): Promise<string> {

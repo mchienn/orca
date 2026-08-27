@@ -1,13 +1,14 @@
-import { basename, dirname, join } from 'node:path'
-import { createReadStream, existsSync } from 'node:fs'
+import { dirname } from 'node:path'
+import { createReadStream } from 'node:fs'
 import { readFile, stat } from 'node:fs/promises'
 import { createInterface, type Interface } from 'node:readline'
 import { canonicalizeUsageWorktreePaths } from '../usage-worktree-canonicalizer'
 import { createUsageEventAggregation } from '../usage/usage-event-aggregation'
 import {
   canonicalizePath,
-  getAntigravityBrainDirectory,
+  extractSessionIdFromPath,
   listGeminiSessionFiles,
+  loadAntigravityHistory,
   yieldToEventLoop
 } from './gemini-session-file-discovery'
 import {
@@ -49,68 +50,31 @@ async function buildWorktreesWithCanonicalPaths(
   return canonicalizeUsageWorktreePaths(worktrees, canonicalizePath)
 }
 
-function extractSessionIdFromPath(filePath: string): string {
-  const segments = filePath.split(/[\\/]+/).filter(Boolean)
-  const lastIndex = segments.length - 1
-  if (
-    segments[lastIndex] === 'transcript.jsonl' ||
-    segments[lastIndex] === 'transcript_full.jsonl'
-  ) {
-    if (
-      segments[lastIndex - 1] === 'logs' &&
-      segments[lastIndex - 2] === '.system_generated' &&
-      segments[lastIndex - 3]
-    ) {
-      return segments[lastIndex - 3]
-    }
+function addCost(left: number | null, right: number | null): number | null {
+  if (left === null && right === null) {
+    return null
   }
-  const isJson = filePath.endsWith('.json')
-  return basename(filePath, isJson ? '.json' : '.jsonl')
+  return (left ?? 0) + (right ?? 0)
 }
 
-async function loadAntigravityHistory(brainOrFilePath: string): Promise<Map<string, string>> {
-  const historyMap = new Map<string, string>()
-  const configuredBrainDir = getAntigravityBrainDirectory()
-  const possiblePaths = [
-    join(dirname(configuredBrainDir), 'history.jsonl'),
-    join(configuredBrainDir, 'history.jsonl'),
-    join(dirname(brainOrFilePath), 'history.jsonl'),
-    join(dirname(dirname(brainOrFilePath)), 'history.jsonl')
-  ]
-  const seenPaths = new Set<string>()
-  for (const histPath of possiblePaths) {
-    if (seenPaths.has(histPath) || !existsSync(histPath)) {
-      continue
-    }
-    seenPaths.add(histPath)
-    try {
-      const content = await readFile(histPath, 'utf-8')
-      for (const line of content.split(/\r?\n/)) {
-        if (!line.trim()) {
-          continue
-        }
-        try {
-          const entry = JSON.parse(line) as { conversationId?: string; workspace?: string }
-          if (entry.conversationId && entry.workspace) {
-            historyMap.set(entry.conversationId, entry.workspace)
-          }
-        } catch {}
-      }
-    } catch {}
-  }
-  return historyMap
+type GeminiUsageMetric = {
+  hasInferredPricing: boolean
+  estimatedCostUsd: number | null
 }
-type GeminiUsageMetric = { hasInferredPricing: boolean }
 
 const geminiUsageAggregation = createUsageEventAggregation<
   GeminiUsageAttributedEvent,
   GeminiUsageMetric
 >({
   metric: {
-    empty: () => ({ hasInferredPricing: false }),
-    fromEvent: (event) => ({ hasInferredPricing: event.hasInferredPricing }),
+    empty: () => ({ hasInferredPricing: false, estimatedCostUsd: null }),
+    fromEvent: (event) => ({
+      hasInferredPricing: event.hasInferredPricing,
+      estimatedCostUsd: event.estimatedCostUsd
+    }),
     fold: (target, source) => {
       target.hasInferredPricing ||= source.hasInferredPricing
+      target.estimatedCostUsd = addCost(target.estimatedCostUsd, source.estimatedCostUsd)
     }
   },
   cloneSessionForMerge: (session) => ({

@@ -2,10 +2,18 @@ import type { GeminiUsageRange, GeminiUsageScope } from '../../shared/gemini-usa
 import type { GeminiUsagePersistedState } from './types'
 import { getUsageRangeCutoff } from '../usage/usage-calendar-range'
 
+function addCost(left: number | null, right: number | null): number | null {
+  if (left === null && right === null) {
+    return null
+  }
+  return (left ?? 0) + (right ?? 0)
+}
+
 export type ScopedGeminiUsageModelRow = {
   modelKey: string
   modelLabel: string
   hasInferredPricing: boolean
+  estimatedCostUsd: number | null
   eventCount: number
   inputTokens: number
   cachedInputTokens: number
@@ -67,6 +75,7 @@ export function getScopedSessionModels(
         modelKey: entry.modelKey,
         modelLabel: entry.modelLabel,
         hasInferredPricing: entry.hasInferredPricing,
+        estimatedCostUsd: entry.estimatedCostUsd,
         eventCount: entry.eventCount,
         inputTokens: entry.inputTokens,
         cachedInputTokens: entry.cachedInputTokens,
@@ -76,6 +85,7 @@ export function getScopedSessionModels(
       })
       continue
     }
+    current.estimatedCostUsd = addCost(current.estimatedCostUsd, entry.estimatedCostUsd)
     current.eventCount += entry.eventCount
     current.inputTokens += entry.inputTokens
     current.cachedInputTokens += entry.cachedInputTokens
